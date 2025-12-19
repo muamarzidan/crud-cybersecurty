@@ -6,6 +6,7 @@ from functools import wraps
 import sqlite3
 import os
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -145,10 +146,13 @@ def add_student():
     return redirect(url_for('index'))
 
 @app.route('/delete/<string:id>')
-@admin_required
+@admin_required 
 def delete_student(id):
-    # RAW Query
-    db.session.execute(text(f"DELETE FROM student WHERE id={id}"))
+    if not re.match(r'^\d+$', id):
+        return "Yaa gagal yaa", 404
+
+    sql = text("DELETE FROM student WHERE id = :id_valid")
+    db.session.execute(sql, {'id_valid': int(id)})
     db.session.commit()
     return redirect(url_for('index'))
 
