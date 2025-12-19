@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .verify-card {
+            background: white;
+            border-radius: 4px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid #999999;
+        }
+        .btn-verify {
+            background: black;
+            border: none;
+            color: white;
+            padding: 12px;
+            font-weight: bold;
+        }
+        .code-input {
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-card">
+        <h2>Verifikasi</h2>
+        <form method="POST" action="/verify_code">
+            <div class="form-group">
+                <input type="text" class="form-control code-input" id="code" name="code" placeholder="" maxlength="12" pattern="\d{12}" required>
+            </div>
+            <button type="submit" class="btn btn-verify btn-block">Masukan</button>
+        </form>
+        <hr>
+        <div class="text-center">
+            <a href="/logout" class="btn btn-sm btn-outline-secondary">Kembali</a>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

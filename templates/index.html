@@ -4,23 +4,34 @@
     <meta charset="UTF-8">
     <title>Students</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="container mt-5">
-        <h1>Students</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Students</h1>
+            <a href="/logout" class="btn btn-outline-light btn-sm text-dark">
+                Logout
+            </a>
+        </div>
+        {% if session.role == 'admin' %}
         <form action="/add" method="POST">
             <input type="text" name="name" placeholder="Name" required>
             <input type="number" name="age" placeholder="Age" required>
             <input type="text" name="grade" placeholder="Grade" required>
             <button type="submit" class="btn btn-primary">Add Student</button>
         </form>
+        {% endif %}
+
         <table class="table mt-3">
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>Age</th>
                     <th>Grade</th>
+                    {% if session.role == 'admin' %}
                     <th>Actions</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -29,14 +40,19 @@
                     <td>{{ student.name|safe }}</td>
                     <td>{{ student.age }}</td>
                     <td>{{ student.grade }}</td>
+                    {% if session.role == 'admin' %}
                     <td>
                         <a href="/edit/{{ student.id }}" class="btn btn-warning">Edit</a>
                         <a href="/delete/{{ student.id }}" class="btn btn-danger">Delete</a>
                     </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

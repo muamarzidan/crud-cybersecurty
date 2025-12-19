@@ -1,12 +1,20 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
+from werkzeug.security import check_password_hash
+from functools import wraps
 import sqlite3
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'bebasinsajayohohoho738')
 db = SQLAlchemy(app)
+
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -17,13 +25,103 @@ class Student(db.Model):
     def __repr__(self):
         return f'<Student {self.name}>'
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
+
+    def __repr__(self):
+        return f'<User {self.username}>'
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        if session.get('role') != 'admin':
+            return redirect(url_for('index'))
+        if not session.get('verified'):
+            return redirect(url_for('verify_code'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        user = db.session.execute(
+            text("SELECT * FROM user WHERE username = :username"),
+            {'username': username}
+        ).fetchone()
+        
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = user.role
+            session['verified'] = False
+            
+            if user.role == 'admin':
+                flash(f'Login berhasil! Silakan masukkan kode verifikasi admin.', 'info')
+                return redirect(url_for('verify_code'))
+            else:
+                session['verified'] = True
+                flash(f'Selamat datang, {user.username}!', 'success')
+                return redirect(url_for('index'))
+        else:
+            flash('Username atau password salah!', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/verify_code', methods=['GET', 'POST'])
+@login_required
+def verify_code():
+    if session.get('role') != 'admin':
+        flash('Halaman ini hanya untuk admin!', 'danger')
+        return redirect(url_for('index'))
+    
+    if session.get('verified'):
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        code = request.form['code']
+        admin_code = os.getenv('ADMIN_CODE', '123456789012')
+        
+        if code == admin_code:
+            session['verified'] = True
+            flash(f'Verifikasi berhasil! Selamat datang, {session.get("username")}!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Kode verifikasi salah!', 'danger')
+    
+    return render_template('verify_code.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     # RAW Query
     students = db.session.execute(text('SELECT * FROM student')).fetchall()
     return render_template('index.html', students=students)
 
 @app.route('/add', methods=['POST'])
+@admin_required
 def add_student():
     name = request.form['name']
     age = request.form['age']
@@ -43,18 +141,19 @@ def add_student():
     cursor.execute(query)
     connection.commit()
     connection.close()
+    flash('Student berhasil ditambahkan!', 'success')
     return redirect(url_for('index'))
 
-
-@app.route('/delete/<string:id>') 
+@app.route('/delete/<string:id>')
+@admin_required
 def delete_student(id):
     # RAW Query
     db.session.execute(text(f"DELETE FROM student WHERE id={id}"))
     db.session.commit()
     return redirect(url_for('index'))
 
-
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
 def edit_student(id):
     if request.method == 'POST':
         name = request.form['name']
@@ -78,4 +177,3 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
-
