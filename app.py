@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import re
 import html
+import time
 
 load_dotenv()
 
@@ -15,6 +16,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 db = SQLAlchemy(app)
+
+login_attempts = {} 
+MAX_ATTEMPTS = 6  # Maksimal 6 percobaan
+TIME_WINDOW = 60  # Dalam 60 detik
 
 
 class Student(db.Model):
@@ -59,9 +64,30 @@ def admin_required(f):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # untuk disable form
+    is_locked = False
+    remaining_time = 0
+    
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        
+        current_time = time.time()
+        
+        if username not in login_attempts:
+            login_attempts[username] = []
+        
+        login_attempts[username] = [
+            attempt_time for attempt_time in login_attempts[username]
+            if current_time - attempt_time < TIME_WINDOW
+        ]
+        
+        if len(login_attempts[username]) >= MAX_ATTEMPTS:
+            oldest_attempt = min(login_attempts[username])
+            remaining_time = int(TIME_WINDOW - (current_time - oldest_attempt))
+            is_locked = True
+            flash(f'Terlalu banyak percobaan, tunggu beberapa saat', 'danger')
+            return render_template('login.html', is_locked=True, remaining_time=remaining_time)
         
         user = db.session.execute(
             text("SELECT * FROM user WHERE username = :username"),
@@ -69,6 +95,8 @@ def login():
         ).fetchone()
         
         if user and check_password_hash(user.password_hash, password):
+            login_attempts[username] = []
+            
             session['user_id'] = user.id
             session['username'] = user.username
             session['role'] = user.role
@@ -80,9 +108,17 @@ def login():
                 session['verified'] = True
                 return redirect(url_for('index'))
         else:
-            flash('Username atau password salah', 'danger')
+            login_attempts[username].append(current_time)
+            attempts_left = MAX_ATTEMPTS - len(login_attempts[username])
+            
+            if attempts_left > 0:
+                flash(f'Username atau password salah. Sisa percobaan: {attempts_left}', 'danger')
+            else:
+                flash(f'Terlalu banyak percobaan login! Tunggu {TIME_WINDOW} detik.', 'danger')
+                is_locked = True
+                remaining_time = TIME_WINDOW
     
-    return render_template('login.html')
+    return render_template('login.html', is_locked=is_locked, remaining_time=remaining_time)
 
 @app.route('/verify_code', methods=['GET', 'POST'])
 @login_required
@@ -93,17 +129,48 @@ def verify_code():
     if session.get('verified'):
         return redirect(url_for('index'))
     
+    is_locked = False
+    remaining_time = 0
+    username = session.get('username', 'unknown')
+    verify_key = f"verify_{username}"  # Key berbeda untuk verify attempts
+    
     if request.method == 'POST':
         code = request.form['code']
         admin_code = os.getenv('ADMIN_CODE')
         
+        current_time = time.time()
+        
+        if verify_key not in login_attempts:
+            login_attempts[verify_key] = []
+        
+        login_attempts[verify_key] = [
+            attempt_time for attempt_time in login_attempts[verify_key]
+            if current_time - attempt_time < TIME_WINDOW
+        ]
+        
+        if len(login_attempts[verify_key]) >= MAX_ATTEMPTS:
+            oldest_attempt = min(login_attempts[verify_key])
+            remaining_time = int(TIME_WINDOW - (current_time - oldest_attempt))
+            is_locked = True
+            flash(f'Terlalu banyak percobaan verifikasi, tunggu beberap saat', 'danger')
+            return render_template('verify_code.html', is_locked=True, remaining_time=remaining_time)
+        
         if code == admin_code:
+            login_attempts[verify_key] = []
             session['verified'] = True
             return redirect(url_for('index'))
         else:
-            flash('Kode verifikasi salah!', 'danger')
+            login_attempts[verify_key].append(current_time)
+            attempts_left = MAX_ATTEMPTS - len(login_attempts[verify_key])
+            
+            if attempts_left > 0:
+                flash(f'Kode verifikasi salah, sisa percobaan: {attempts_left}', 'danger')
+            else:
+                flash(f'Terlalu banyak percobaan verifikasi! Tunggu beberaps saat', 'danger')
+                is_locked = True
+                remaining_time = TIME_WINDOW
     
-    return render_template('verify_code.html')
+    return render_template('verify_code.html', is_locked=is_locked, remaining_time=remaining_time)
 
 @app.route('/logout')
 def logout():

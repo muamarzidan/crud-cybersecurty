@@ -1,6 +1,7 @@
 from app import app, db
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash
+import re
 
 def create_user(username, password):
     with app.app_context():
@@ -55,6 +56,18 @@ def main():
         
         if len(password) < 12:
             print("Password minimal 12 karakter!\n")
+            continue
+        
+        if not re.search(r'[A-Z]', password):
+            print("Password harus mengandung minimal 1 huruf BESAR!\n")
+            continue
+        
+        if not re.search(r'[a-z]', password):
+            print("Password harus mengandung minimal 1 huruf kecil!\n")
+            continue
+        
+        if not re.search(r'[0-9]', password):
+            print("Password harus mengandung minimal 1 angka!\n")
             continue
         
         password_confirm = input("Konfirmasi Password: ").strip()
