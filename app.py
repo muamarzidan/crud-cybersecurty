@@ -159,18 +159,19 @@ def delete_student(id):
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
 def edit_student(id):
+    student = Student.query.get_or_404(id)
     if request.method == 'POST':
-        name = request.form['name']
-        age = request.form['age']
-        grade = request.form['grade']
+        student.name = request.form['name']
+        student.age = request.form['age']
+        student.grade = request.form['grade']
         
         # RAW Query
-        db.session.execute(text(f"UPDATE student SET name='{name}', age={age}, grade='{grade}' WHERE id={id}"))
+        # db.session.execute(text(f"UPDATE student SET name='{name}', age={age}, grade='{grade}' WHERE id={id}"))
         db.session.commit()
         return redirect(url_for('index'))
     else:
         # RAW Query
-        student = db.session.execute(text(f"SELECT * FROM student WHERE id={id}")).fetchone()
+        # student = db.session.execute(text(f"SELECT * FROM student WHERE id={id}")).fetchone()
         return render_template('edit.html', student=student)
 
 # if __name__ == '__main__':
