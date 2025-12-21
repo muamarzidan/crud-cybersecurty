@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from werkzeug.security import check_password_hash
 from functools import wraps
-import sqlite3
 import os
 from dotenv import load_dotenv
 import re
@@ -76,14 +75,12 @@ def login():
             session['verified'] = False
             
             if user.role == 'admin':
-                flash(f'Login berhasil! Silakan masukkan kode verifikasi admin.', 'info')
                 return redirect(url_for('verify_code'))
             else:
                 session['verified'] = True
-                flash(f'Selamat datang, {user.username}!', 'success')
                 return redirect(url_for('index'))
         else:
-            flash('Username atau password salah!', 'danger')
+            flash('Username atau password salah', 'danger')
     
     return render_template('login.html')
 
@@ -91,7 +88,6 @@ def login():
 @login_required
 def verify_code():
     if session.get('role') != 'admin':
-        flash('Halaman ini hanya untuk admin!', 'danger')
         return redirect(url_for('index'))
     
     if session.get('verified'):
@@ -99,11 +95,10 @@ def verify_code():
     
     if request.method == 'POST':
         code = request.form['code']
-        admin_code = os.getenv('ADMIN_CODE', '123456789012')
+        admin_code = os.getenv('ADMIN_CODE')
         
         if code == admin_code:
             session['verified'] = True
-            flash(f'Verifikasi berhasil! Selamat datang, {session.get("username")}!', 'success')
             return redirect(url_for('index'))
         else:
             flash('Kode verifikasi salah!', 'danger')
@@ -136,9 +131,6 @@ def add_student():
     # grade = request.form['grade']
     
 
-    connection = sqlite3.connect('instance/students.db')
-    cursor = connection.cursor()
-
     # RAW Query
     # db.session.execute(
     #     text("INSERT INTO student (name, age, grade) VALUES (:name, :age, :grade)"),
@@ -149,8 +141,6 @@ def add_student():
     # cursor.execute(query)
     sql = text("INSERT INTO student (name, age, grade) VALUES (:name, :age, :grade)")
     db.session.execute(sql, {'name': name, 'age': age, 'grade': grade})
-    # connection.commit()
-    # connection.close()
     db.session.commit()
     flash('Student berhasil ditambahkan!', 'success')
     return redirect(url_for('index'))
@@ -169,18 +159,19 @@ def delete_student(id):
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
 def edit_student(id):
+    student = Student.query.get_or_404(id)
     if request.method == 'POST':
-        name = request.form['name']
-        age = request.form['age']
-        grade = request.form['grade']
+        student.name = request.form['name']
+        student.age = request.form['age']
+        student.grade = request.form['grade']
         
         # RAW Query
-        db.session.execute(text(f"UPDATE student SET name='{name}', age={age}, grade='{grade}' WHERE id={id}"))
+        # db.session.execute(text(f"UPDATE student SET name='{name}', age={age}, grade='{grade}' WHERE id={id}"))
         db.session.commit()
         return redirect(url_for('index'))
     else:
         # RAW Query
-        student = db.session.execute(text(f"SELECT * FROM student WHERE id={id}")).fetchone()
+        # student = db.session.execute(text(f"SELECT * FROM student WHERE id={id}")).fetchone()
         return render_template('edit.html', student=student)
     
 ########## PERBAIKAN CODE NO 2 ##########
