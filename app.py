@@ -182,6 +182,29 @@ def edit_student(id):
         # RAW Query
         student = db.session.execute(text(f"SELECT * FROM student WHERE id={id}")).fetchone()
         return render_template('edit.html', student=student)
+    
+########## PERBAIKAN CODE NO 2 ##########
+# def edit_student(id):
+#     if request.method == 'POST':
+#         raw_name = request.form['name']
+#         name = html.escape(raw_name)
+
+#         age = request.form['age']
+
+#         raw_grade = request.form['grade']
+#         grade = html.escape(raw_grade)
+
+#         sql = text("UPDATE student SET name=:name, age=:age, grade=:grade WHERE id=:id")
+#         db.session.execute(sql, {'name': name, 'age': age, 'grade': grade, 'id': id})
+
+#         db.session.commit()
+#         return redirect(url_for('index'))
+#     else:
+#         sql = text("SELECT * FROM student WHERE id=:id")
+#         student = db.session.execute(sql, {'id': id}).fetchone()
+
+#         return render_template('edit.html', student=student)
+########### |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ##########
 
 # if __name__ == '__main__':
 #     with app.app_context():
