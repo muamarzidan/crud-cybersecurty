@@ -7,6 +7,7 @@ import sqlite3
 import os
 from dotenv import load_dotenv
 import re
+import html
 
 load_dotenv()
 
@@ -124,9 +125,15 @@ def index():
 @app.route('/add', methods=['POST'])
 @admin_required
 def add_student():
-    name = request.form['name']
+    raw_name = request.form['name']
+    name = html.escape(raw_name)
     age = request.form['age']
-    grade = request.form['grade']
+    raw_grade = request.form['grade']
+    grade = html.escape(raw_grade)
+
+    # name = request.form['name']
+    # age = request.form['age']
+    # grade = request.form['grade']
     
 
     connection = sqlite3.connect('instance/students.db')
@@ -138,10 +145,13 @@ def add_student():
     #     {'name': name, 'age': age, 'grade': grade}
     # )
     # db.session.commit()
-    query = f"INSERT INTO student (name, age, grade) VALUES ('{name}', {age}, '{grade}')"
-    cursor.execute(query)
-    connection.commit()
-    connection.close()
+    # query = f"INSERT INTO student (name, age, grade) VALUES ('{name}', {age}, '{grade}')"
+    # cursor.execute(query)
+    sql = text("INSERT INTO student (name, age, grade) VALUES (:name, :age, :grade)")
+    db.session.execute(sql, {'name': name, 'age': age, 'grade': grade})
+    # connection.commit()
+    # connection.close()
+    db.session.commit()
     flash('Student berhasil ditambahkan!', 'success')
     return redirect(url_for('index'))
 
